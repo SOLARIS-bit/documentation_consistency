@@ -1,0 +1,9 @@
+langchain
+openai
+chromadb
+streamlit
+tree-sitter
+markdown
+graphviz
+synthcity
+

@@ -1,0 +1,29 @@
+# Base ML & DL
+torch==2.1.0
+pytorch-lightning==2.0.9
+numpy<2.0,>=1.20
+pandas
+scikit-learn
+scipy
+joblib
+
+# SynthCity core dependencies
+cloudpickle
+loguru
+optuna>=3.1
+pydantic>=2.0
+xgboost<3.0.0
+lifelines<0.30.0,>=0.29.0
+pgmpy<1.0
+redis
+shap
+tenacity
+xgbse>=0.3.1
+
+# LangChain + Streamlit
+langchain
+langchain-community
+langchain-core
+openai
+tiktoken
+streamlit
