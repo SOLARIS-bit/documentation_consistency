@@ -1,0 +1,36 @@
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,3 +1,5 @@
+-langchain==1.0.2
+-langchain-core==1.0.4
+-langchain-monorepo @ git+https://github.com/langchain-ai/langchain.git@ee19a30dde66674cbad2be0291ca805125823882
++langchain
++langchain-core
++langchain-community
++langgraph
++pytest
+--- a/analyzer.py
++++ b/analyzer.py
+@@
+-from langchain.prompts import PromptTemplate
+-
+-def analyze_project(code_text: str, doc_text: str) -> str:
++from langchain_core.prompts import PromptTemplate
++from langchain_openai import ChatOpenAI
++from langchain_core.output_parsers import StrOutputParser
++from langchain_core.runnables import RunnableSequence
++
++def analyze_project(code_text: str, doc_text: str) -> str:
+@@
+-    llm = OpenAI(temperature=0.2)
+-    chain = LLMChain(llm=llm, prompt=prompt)
+-    return chain.run(code=code_text, docs=doc_text)
++    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
++    chain = RunnableSequence(
++        prompt
++        | llm
++        | StrOutputParser()
++    )
++    return chain.invoke({"code": code_text, "docs": doc_text})
+# Note: Enregistrez ce patch puis applique-le :
+# git apply fix-ci-langchain.patch
