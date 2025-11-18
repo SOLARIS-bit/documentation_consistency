@@ -2,3 +2,4 @@ pytest
 markdown
 langchain-core
 langchain-openai
+Pillow
