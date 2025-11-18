@@ -1,4 +1,4 @@
-langchain-core==0.2.2
-langchain-openai==0.1.6
-markdown==3.6
 pytest
+markdown
+langchain-core
+langchain-openai
