@@ -3,3 +3,4 @@ markdown
 langchain-core
 langchain-openai
 Pillow
+pytest-mock

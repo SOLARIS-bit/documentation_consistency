@@ -1,8 +1,19 @@
 class Student:
-    """Represents a student."""
-    def __init__(self, name):
-        self.name = name
+    """
+    Represents a student.
 
-class Teacher:
-    def __init__(self, name):  # pas de docstring
+    Attributes:
+        name (str): Student's name.
+        age (int): Student's age.
+    """
+
+    def __init__(self, name, age):
+        """
+        Initialize a new student.
+
+        Args:
+            name (str): Student's name.
+            age (int): Student's age.
+        """
         self.name = name
+        self.age = age

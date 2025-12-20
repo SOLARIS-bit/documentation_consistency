@@ -1,34 +1,39 @@
-import re
+from typing import List, Dict, Any, Optional
+
 
 class Comparator:
-    def __init__(self, code_elements, docs):
-        self.code_elements = code_elements
-        self.docs = docs
+    """
+    Compare code elements with documentation elements.
+    Returns list of missing documentation items.
+    """
 
-    def check_consistency(self):
-        """Compare le code et la doc et détecte les éléments manquants."""
-        missing = []
-        all_doc_text = " ".join(d["content"] for d in self.docs)
+    def __init__(
+        self, 
+        code_elements: Optional[List[Dict[str, Any]]] = None, 
+        docs: Optional[List[Dict[str, Any]]] = None
+    ):
+        self.code_elements: List[Dict[str, Any]] = code_elements or []
+        self.docs: List[Dict[str, Any]] = docs or []
+
+    def compare(self, code_elements: List[Dict[str, Any]], docs: List[Dict[str, Any]]) -> List[str]:
+        issues: List[str] = []
+        all_doc_text = " ".join(d.get("content", "") for d in docs).lower()
+
+        for element in code_elements:
+            name = element.get("name", "").lower()
+            if name not in all_doc_text:
+                issues.append(f"Missing documentation for: {name}")
+
+        return issues
+
+    # Optional backward compatibility for old tests
+    def check_consistency(self) -> List[Dict[str, Any]]:
+        missing: List[Dict[str, Any]] = []
+        all_doc_text = " ".join(d.get("content", "") for d in self.docs).lower()
 
         for element in self.code_elements:
-            if element["name"] not in all_doc_text:
+            name = element.get("name", "").lower()
+            if name not in all_doc_text:
                 missing.append(element)
+
         return missing
-
-
-if __name__ == "__main__":
-    from code_parser import CodeParser
-    from doc_parser import DocumentationParser
-
-    code_parser = CodeParser("example_project")
-    doc_parser = DocumentationParser("example_project")
-
-    code_data = code_parser.analyze_directory()
-    doc_data = doc_parser.read_docs()
-
-    comparator = Comparator(code_data, doc_data)
-    missing = comparator.check_consistency()
-
-    print("\n⚠️ Fonctions / classes non documentées :")
-    for m in missing:
-        print(f" - {m['type']} {m['name']}")

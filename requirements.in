@@ -1,4 +1,0 @@
-langchain==1.0.2
-pillow
-pytest
-pytest-cov

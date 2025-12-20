@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 from .code_parser import CodeParser
 from .doc_parser import DocumentationParser
 from .comparator import Comparator
+__all__ = ["CodeParser", "DocumentationParser", "Comparator"]
 
 # Lazy load langchain when needed
 _LLM_AVAILABLE = False

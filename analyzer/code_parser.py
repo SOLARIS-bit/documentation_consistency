@@ -1,85 +1,77 @@
 import os
 import ast
+from pathlib import Path
 from typing import Any, Dict, List
 
 
 class CodeParser:
     """
-    Parse Python files in a directory and extract top-level functions, async functions and classes
-    with their docstrings and location. This implementation has no external dependencies and
-    is safe to import in test environments where optional packages (e.g. langchain) are missing.
+    Parse Python files in a directory and extract top-level functions,
+    async functions, and classes with their docstrings and location.
     """
 
-    def __init__(self, project_dir: str):
-        self.project_dir = project_dir or "."
+    def __init__(self, project_dir: str | Path = "."):
+        self.project_dir: Path = Path(project_dir)
 
-    def analyze_file(self, filepath: str) -> List[Dict[str, Any]]:
+    # Alias for compatibility
+    def parse_file(self, filepath: str | Path) -> List[Dict[str, Any]]:
+        return self.analyze_file(filepath)
+
+    def analyze_file(self, filepath: str | Path) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
+        filepath = Path(filepath)
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                source = f.read()
+            source = filepath.read_text(encoding="utf-8")
         except Exception:
             return results
 
         try:
-            node = ast.parse(source, filename=filepath)
+            node = ast.parse(source, filename=str(filepath))
         except SyntaxError:
             return results
 
         for child in ast.iter_child_nodes(node):
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                results.append(
-                    {
-                        "name": child.name,
-                        "type": "function",
-                        "file": os.path.relpath(filepath, self.project_dir),
-                        "line": getattr(child, "lineno", None),
-                        "doc": ast.get_docstring(child),
-                    }
-                )
+                results.append({
+                    "name": child.name,
+                    "type": "function",
+                    "file": str(filepath.relative_to(self.project_dir)),
+                    "line": getattr(child, "lineno", None),
+                    "doc": ast.get_docstring(child),
+                })
             elif isinstance(child, ast.ClassDef):
-                # Class docstring
-                results.append(
-                    {
-                        "name": child.name,
-                        "type": "class",
-                        "file": os.path.relpath(filepath, self.project_dir),
-                        "line": getattr(child, "lineno", None),
-                        "doc": ast.get_docstring(child),
-                    }
-                )
-                # Methods inside class
+                results.append({
+                    "name": child.name,
+                    "type": "class",
+                    "file": str(filepath.relative_to(self.project_dir)),
+                    "line": getattr(child, "lineno", None),
+                    "doc": ast.get_docstring(child),
+                })
                 for sub in child.body:
                     if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        results.append(
-                            {
-                                "name": f"{child.name}.{sub.name}",
-                                "type": "method",
-                                "file": os.path.relpath(filepath, self.project_dir),
-                                "line": getattr(sub, "lineno", None),
-                                "doc": ast.get_docstring(sub),
-                            }
-                        )
+                        results.append({
+                            "name": f"{child.name}.{sub.name}",
+                            "type": "method",
+                            "file": str(filepath.relative_to(self.project_dir)),
+                            "line": getattr(sub, "lineno", None),
+                            "doc": ast.get_docstring(sub),
+                        })
         return results
 
     def analyze_directory(self) -> List[Dict[str, Any]]:
         elements: List[Dict[str, Any]] = []
-        if not os.path.isdir(self.project_dir):
-            # If the directory doesn't exist, try current directory
-            base_dir = "."
-        else:
-            base_dir = self.project_dir
 
-        for root, _, files in os.walk(base_dir):
-            # Skip virtualenv and common binary dirs
-            if any(part.startswith(".venv") or part == "__pycache__" for part in root.split(os.sep)):
+        if not self.project_dir.is_dir():
+            return elements
+
+        for root, _, files in os.walk(str(self.project_dir)):
+            if any(part.startswith(".venv") or part == "__pycache__" for part in Path(root).parts):
                 continue
             for fname in files:
                 if not fname.endswith(".py"):
                     continue
-                path = os.path.join(root, fname)
+                path = Path(root) / fname
                 elements.extend(self.analyze_file(path))
 
-        # Ensure deterministic ordering for tests
         elements.sort(key=lambda e: (e.get("file") or "", e.get("line") or 0, e.get("name") or ""))
         return elements
