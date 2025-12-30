@@ -5,7 +5,7 @@ from pathlib import Path
 
 from project_analyzer import analyze_project
 from generator.text_suggester import suggest_text_improvements
-from generator.visual_creator import create_visual_summary
+from generator.visual_creator import create_visual
 
 
 def print_header(title: str):
@@ -78,7 +78,7 @@ def run_demo():
     print("\n🎨 Generating visual summary...")
 
     output_path = "output.png"
-    create_visual_summary(result, output_path=output_path)
+    create_visual(result, output_path=output_path)
 
     print(f"Visual created: {output_path}")
 

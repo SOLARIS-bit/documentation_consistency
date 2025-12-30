@@ -133,12 +133,14 @@ def test_suggest_text_improvements_empty():
 
 def test_create_visual_returns_path():
     """create_visual should return a file path string."""
-    result = create_visual("Test Summary")
+    result_dict = {"status": "ok", "issues": [], "checked_samples": 10, "mode": "deterministic"}
+    result = create_visual(result_dict)
     assert isinstance(result, str)
     # Should be a non-empty path
     assert len(result) > 0
 
 def test_create_visual_empty_summary():
     """create_visual should handle empty summary gracefully."""
-    result = create_visual("")
+    result_dict = {"status": "ok", "issues": [], "checked_samples": 0, "mode": "deterministic"}
+    result = create_visual(result_dict)
     assert isinstance(result, str)
