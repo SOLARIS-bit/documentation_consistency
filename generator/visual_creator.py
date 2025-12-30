@@ -109,7 +109,7 @@ def create_visual_summary(result: Dict[str, Any], output_path: str = "output.png
     # ====== ISSUES SECTION ======
     draw.text(
         (card_x1 + 40, y),
-        "Detected Issues:",
+        "Issue Summary:",
         font=font_header,
         fill=TITLE_COLOR,
     )
@@ -123,11 +123,25 @@ def create_visual_summary(result: Dict[str, Any], output_path: str = "output.png
             fill=OK_COLOR,
         )
     else:
-        for issue in issues:
-            wrapped = textwrap.fill(issue, width=60)
+        # Calculate breakdown
+        missing_classes = sum(1 for i in issues if "MISSING_DOC_CLASS" in i)
+        missing_methods = sum(1 for i in issues if "MISSING_DOC_METHOD" in i)
+        missing_functions = sum(1 for i in issues if "MISSING_DOC_FUNCTION" in i)
+        param_issues = sum(1 for i in issues if "INCONSISTENCY_PARAM" in i)
+        
+        # Display breakdown
+        breakdown_lines = [
+            f"Total Issues: {len(issues)}",
+            f"Classes Missing: {missing_classes}",
+            f"Methods Missing: {missing_methods}",
+            f"Functions Missing: {missing_functions}",
+            f"Parameter Issues: {param_issues}"
+        ]
+        
+        for line in breakdown_lines:
             draw.text(
                 (card_x1 + 60, y),
-                f"• {wrapped}",
+                line,
                 font=font_text,
                 fill=WARN_COLOR,
             )

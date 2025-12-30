@@ -34,20 +34,24 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
     doc_parser = DocumentationParser(directory=project_path_str)
     comparator = Comparator()
 
+    # CRUCIAL : On lit TOUTE la doc (README, etc.) une seule fois ici
+    all_docs = doc_parser.parse_directory() 
+
     for file_path in py_files:
         file_str: str = str(file_path)
 
         try:
+            # On extrait les fonctions/classes du fichier Python
             code_info = parser.analyze_file(file_str)
-            doc_info = doc_parser.parse_file(file_str)
-
-            comparison = comparator.compare(code_info, doc_info)
+            
+            # AU LIEU DE : doc_info = doc_parser.parse_file(file_str)
+            # ON UTILISE : all_docs qu'on a chargé plus haut
+            comparison = comparator.compare(code_info, all_docs)
 
             if comparison:
                 issues.extend(comparison)
 
             checked_samples += 1
-
         except Exception:
             continue
 

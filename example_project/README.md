@@ -1,35 +1,19 @@
-# Example Project Documentation
+# Project: School Management & Math Tools
 
-This project is used to demonstrate the Documentation Consistency Analyzer.
+## Math Utilities
+* `add`: Adds numbers.
+* `subtract`: Subtracts numbers.
+* `multiply`: Multiplies numbers.
+* `divide`: Divides numbers.
+* (Note: I intentionally forgot power here)
 
----
-
-## Functions
-
-### add
-Adds two numbers together.
-
-### subtract
-Subtracts one number from another.
-
----
-
-## Classes
-
+## School Classes
 ### Student
-Represents a student with basic information.
+Represents a student.
+* `greet`: Say hello.
+* `is_adult`: Check age.
+* `celebrate_birthday`: Increase age.
+* `study`: Study a subject.
 
-- Attributes:
-  - `name` (str)
-  - `age` (int)
-
-### Teacher
-Represents a teacher with a name.
-
-- Attributes:
-  - `name` (str)
-
----
-
-## Purpose
-This dataset exists only for demonstration and testing of the analyzer.
+## Teachers
+(Note: I intentionally forgot to describe Teacher methods here)

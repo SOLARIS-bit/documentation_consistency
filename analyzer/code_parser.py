@@ -20,6 +20,9 @@ class CodeParser:
     def analyze_file(self, filepath: str | Path) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
         filepath = Path(filepath)
+        # Skip test-related files
+        if 'test' in str(filepath).lower() or 'spec' in str(filepath).lower() or 'conftest' in str(filepath).lower():
+            return results
         try:
             source = filepath.read_text(encoding="utf-8")
         except Exception:
@@ -31,47 +34,88 @@ class CodeParser:
             return results
 
         for child in ast.iter_child_nodes(node):
+            # --- NOUVEAU : Détection de la version du projet ---
+            if isinstance(child, ast.Assign):
+                for target in child.targets:
+                    if isinstance(target, ast.Name) and target.id == "__version__":
+                        if isinstance(child.value, ast.Constant): # Python 3.8+
+                            results.append({
+                                "name": "__version__",
+                                "type": "version",
+                                "value": str(child.value.value),
+                                "file": str(filepath.relative_to(self.project_dir))
+                            })
+            # --- Fonctions et Méthodes ---
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                results.append({
-                    "name": child.name,
-                    "type": "function",
-                    "file": str(filepath.relative_to(self.project_dir)),
-                    "line": getattr(child, "lineno", None),
-                    "doc": ast.get_docstring(child),
-                })
+                if not child.name.startswith('_'):
+                    results.append(self._extract_function_info(child, filepath))
+                
             elif isinstance(child, ast.ClassDef):
-                results.append({
-                    "name": child.name,
-                    "type": "class",
-                    "file": str(filepath.relative_to(self.project_dir)),
-                    "line": getattr(child, "lineno", None),
-                    "doc": ast.get_docstring(child),
-                })
-                for sub in child.body:
-                    if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        results.append({
-                            "name": f"{child.name}.{sub.name}",
-                            "type": "method",
-                            "file": str(filepath.relative_to(self.project_dir)),
-                            "line": getattr(sub, "lineno", None),
-                            "doc": ast.get_docstring(sub),
-                        })
+                if not child.name.startswith('_'):
+                    results.append({
+                        "name": child.name,
+                        "type": "class",
+                        "file": str(filepath.relative_to(self.project_dir)),
+                        "line": getattr(child, "lineno", None),
+                        "doc": ast.get_docstring(child),
+                    })
+                    for sub in child.body:
+                        if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                            if not sub.name.startswith('_'):
+                                results.append(self._extract_function_info(sub, filepath, prefix=child.name))
         return results
+    def _extract_function_info(self, node, filepath, prefix=None):
+        """Helper pour extraire les arguments d'une fonction"""
+        name = f"{prefix}.{node.name}" if prefix else node.name
+        # On extrait les noms des arguments (en ignorant 'self' et 'cls')
+        args = [a.arg for a in node.args.args if a.arg not in ("self", "cls")]
+        
+        return {
+            "name": name,
+            "type": "method" if prefix else "function",
+            "file": str(filepath.relative_to(self.project_dir)),
+            "line": getattr(node, "lineno", None),
+            "doc": ast.get_docstring(node),
+            "args": args # <--- CRUCIAL pour la détection d'incohérences
+        } 
 
     def analyze_directory(self) -> List[Dict[str, Any]]:
         elements: List[Dict[str, Any]] = []
+        
+        # Dossiers à bannir (en minuscules pour la comparaison)
+        BLACKLIST_DIRS = {'tests', 'testing', 'docs', 'scripts', 'examples', 'venv', '.git', 'test', 'spec', 'conftest'}
 
-        if not self.project_dir.is_dir():
-            return elements
+        for root, dirs, files in os.walk(self.project_dir):
+            # 1. Sécurité au niveau des dossiers
+            # On modifie 'dirs' pour que os.walk ne descende pas dedans
+            dirs[:] = [d for d in dirs if d.lower() not in BLACKLIST_DIRS]
 
-        for root, _, files in os.walk(str(self.project_dir)):
-            if any(part.startswith(".venv") or part == "__pycache__" for part in Path(root).parts):
-                continue
             for fname in files:
+                # 2. Sécurité au niveau des fichiers
                 if not fname.endswith(".py"):
                     continue
-                path = Path(root) / fname
-                elements.extend(self.analyze_file(path))
+                
+                # On ignore tout fichier qui contient "test" dans son nom
+                if "test" in fname.lower():
+                    continue
+                
+                name = fname
+                # 4. On ignore les tests
+                if name.startswith("test_") or name.startswith("Test"):
+                    continue
 
-        elements.sort(key=lambda e: (e.get("file") or "", e.get("line") or 0, e.get("name") or ""))
+                # 5. On ignore les méthodes privées (souvent de l'implémentation interne)
+                if name.startswith("_") and not name.startswith("__"):
+                    continue
+
+                # 6. Cas spécial pour __init__ (souvent documenté dans la classe)
+                if name == "__init__":
+                    continue
+
+                path = Path(root) / fname
+                try:
+                    elements.extend(self.analyze_file(path))
+                except Exception as e:
+                    print(f"Error parsing {fname}: {e}")
+
         return elements
