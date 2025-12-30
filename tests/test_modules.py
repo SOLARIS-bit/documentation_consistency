@@ -26,9 +26,9 @@ def test_code_parser_empty_directory():
 
 def test_code_parser_analyze_file_with_function():
     """CodeParser should extract function docstrings."""
-    # Create a temp file for testing
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-        f.write("""
+    # Create a temp file in project root for testing
+    test_file = PROJECT_ROOT / "temp_sample.py"
+    test_file.write_text("""
 def greet(name):
     '''Say hello to someone.'''
     return f"Hello {name}"
@@ -40,11 +40,10 @@ class Greeter:
         '''Greet multiple people.'''
         pass
 """)
-        temp_file = f.name
     
     try:
         cp = CodeParser(str(PROJECT_ROOT))
-        result = cp.analyze_file(temp_file)
+        result = cp.analyze_file(str(test_file))
         assert len(result) >= 2  # At least function + class
         
         func = [r for r in result if r["type"] == "function"]
@@ -57,9 +56,7 @@ class Greeter:
         assert classes[0]["name"] == "Greeter"
         
     finally:
-        Path(temp_file).unlink()
-
-# ===== DocumentationParser Tests =====
+        test_file.unlink()
 
 def test_doc_parser_read_docs():
     """DocumentationParser should find and read docs."""
@@ -69,7 +66,7 @@ def test_doc_parser_read_docs():
     # Should find at least README if present
     if docs:
         doc = docs[0]
-        assert "filename" in doc
+        assert "file" in doc
         assert "content" in doc
 
 def test_doc_parser_empty_dir():
