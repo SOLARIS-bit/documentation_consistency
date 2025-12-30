@@ -137,13 +137,14 @@ Typical output:
 High-level functions you can call from scripts:
 
 - analyze_project(project_path: str) -> dict | str  
-  Top-level analyzer (in `analyzer.py`). Uses LLM when available; fallback deterministic result otherwise.
+- analyze_project(project_path: str) -> Dict[str, Any]  
+  In `analyzer/__init__.py`. Analyzes a project directory for documentation consistency, returns a dict with status, issues, etc. Uses LLM when available.
 
-- suggest_text_improvements(doc_text: str) -> dict | str  
+- suggest_text_improvements(doc_text: str) -> str  
   In `generator/text_suggester.py`. Uses LangChain/OpenAI when available; returns a fallback summary otherwise.
 
-- create_visual(summary: str) -> str  
-  In `generator/visual_creator.py`. Generates a PNG summary and returns the file path.
+- create_visual_summary(result: Dict[str, Any], output_path: str = "output.png") -> str  
+  In `generator/visual_creator.py`. Generates a PNG summary from analysis result and returns the file path.
 
 - generate_synthetic_data() -> dict  
   In `data_generator.py`. Returns example code/docs and synthetic_data field; uses synthcity if present, otherwise returns a small internal example.
@@ -152,12 +153,17 @@ Examples:
 ```python
 from analyzer import analyze_project
 from generator.text_suggester import suggest_text_improvements
+from generator.visual_creator import create_visual_summary
 
 res = analyze_project("./my_project")
 print(res)
 
 suggestion = suggest_text_improvements("Function does x but doc is missing")
 print(suggestion)
+
+# Generate visual from result
+visual_path = create_visual_summary(res)
+print(f"Visual saved to: {visual_path}")
 ```
 
 ---
