@@ -12,7 +12,7 @@ def _load_font(size: int):
         return ImageFont.load_default()
 
 
-def create_visual(result: Dict[str, Any], output_path: str = "output.png") -> str:
+def create_visual_summary(result: Dict[str, Any], output_path: str = "output.png") -> str:
     """
     Create a dark-themed HD visual summary (1920×1080) of the analysis result.
 

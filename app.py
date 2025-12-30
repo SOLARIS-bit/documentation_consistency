@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from project_analyzer import analyze_project
 from generator.text_suggester import suggest_text_improvements
-from generator.visual_creator import create_visual
+from generator.visual_creator import create_visual_summary
 
 def generate_markdown_snippet(issues, result):
     snippet = "## 📝 Documentation Update\n\n"
@@ -171,7 +171,7 @@ if uploaded_project:
 
         # ---- Visual Summary ----
         st.subheader("🎨 Visual Summary")
-        visual_path = create_visual(result)
+        visual_path = create_visual_summary(result)
         st.image(visual_path, caption="Documentation Consistency Summary", width=1200)
     
 

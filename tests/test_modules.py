@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 # Ensure project root is importable
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -12,7 +12,7 @@ from analyzer.code_parser import CodeParser
 from analyzer.doc_parser import DocumentationParser
 from analyzer.comparator import Comparator
 from generator.text_suggester import suggest_text_improvements
-from generator.visual_creator import create_visual
+from generator.visual_creator import create_visual_summary
 
 # ===== CodeParser Tests =====
 
@@ -26,9 +26,9 @@ def test_code_parser_empty_directory():
 
 def test_code_parser_analyze_file_with_function():
     """CodeParser should extract function docstrings."""
-    # Create a temp file in PROJECT_ROOT for testing
-    test_file = PROJECT_ROOT / "temp_test_module.py"
-    test_file.write_text("""
+    # Create a temp file for testing
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write("""
 def greet(name):
     '''Say hello to someone.'''
     return f"Hello {name}"
@@ -40,10 +40,11 @@ class Greeter:
         '''Greet multiple people.'''
         pass
 """)
+        temp_file = f.name
     
     try:
         cp = CodeParser(str(PROJECT_ROOT))
-        result = cp.analyze_file(str(test_file))
+        result = cp.analyze_file(temp_file)
         assert len(result) >= 2  # At least function + class
         
         func = [r for r in result if r["type"] == "function"]
@@ -56,7 +57,7 @@ class Greeter:
         assert classes[0]["name"] == "Greeter"
         
     finally:
-        test_file.unlink()
+        Path(temp_file).unlink()
 
 # ===== DocumentationParser Tests =====
 
@@ -94,7 +95,7 @@ def test_comparator_check_consistency_finds_missing():
     
     assert isinstance(missing, list)
     # func_b has no doc, should be in missing
-    assert any(m["name"] == "func_b" for m in missing)
+    assert any("func_b" in m for m in missing)
 
 def test_comparator_returns_list():
     """Comparator.check_consistency always returns a list."""
@@ -132,15 +133,15 @@ def test_suggest_text_improvements_empty():
 # ===== VisualCreator Tests =====
 
 def test_create_visual_returns_path():
-    """create_visual should return a file path string."""
+    """create_visual_summary should return a file path string."""
     result_dict = {"status": "ok", "issues": [], "checked_samples": 10, "mode": "deterministic"}
-    result = create_visual(result_dict)
+    result = create_visual_summary(result_dict)
     assert isinstance(result, str)
     # Should be a non-empty path
     assert len(result) > 0
 
 def test_create_visual_empty_summary():
-    """create_visual should handle empty summary gracefully."""
+    """create_visual_summary should handle empty summary gracefully."""
     result_dict = {"status": "ok", "issues": [], "checked_samples": 0, "mode": "deterministic"}
-    result = create_visual(result_dict)
+    result = create_visual_summary(result_dict)
     assert isinstance(result, str)
