@@ -1,19 +1,5 @@
 {
-  "analysis_modes": {
-    "relaxed": {
-      "ignore_private": true,
-      "require_docstrings": false,
-      "check_params": false
-    },
-    "standard": {
-      "ignore_private": true,
-      "require_docstrings": true,
-      "check_params": true
-    },
-    "strict": {
-      "ignore_private": false,
-      "require_docstrings": true,
-      "check_params": true
-    }
-  }
+  "python.analysis.extraPaths": [
+    "./"
+  ]
 }
