@@ -1,4 +1,7 @@
 from typing import List, Dict, Any, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Comparator:
     """

@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union
+import logging
 
 from analyzer.code_parser import CodeParser
 from analyzer.doc_parser import DocumentationParser
 from analyzer.comparator import Comparator
+
+logger = logging.getLogger(__name__)
 
 # Optional LLM imports (always define names)
 try:
@@ -11,11 +14,13 @@ try:
     from langchain_core.prompts import PromptTemplate  # type: ignore
     from langchain_core.messages import BaseMessage  # type: ignore
     LLM_AVAILABLE = True
-except Exception:
+    logger.info("LLM support enabled (LangChain + OpenAI available)")
+except Exception as e:
     ChatOpenAI = None  # type: ignore
     PromptTemplate = None  # type: ignore
     BaseMessage = None  # type: ignore
     LLM_AVAILABLE = False
+    logger.debug(f"LLM support disabled: {str(e)}")
 
 
 def analyze_project(project_path: str) -> Dict[str, Any]:
@@ -24,10 +29,14 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
     """
     project_path_str: str = str(project_path)
     project_path_obj: Path = Path(project_path_str)
+    
+    logger.info(f"Starting project analysis: {project_path_str}")
 
     # Get Python files
     py_files: List[Path] = list(project_path_obj.rglob("*.py"))  # type: ignore
     checked_samples: int = 0
+    
+    logger.debug(f"Found {len(py_files)} Python files in project")
     issues: List[str] = []
 
     parser = CodeParser(project_dir=project_path_str)

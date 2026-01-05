@@ -1,8 +1,10 @@
 import os
 import ast
+import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
+logger = logging.getLogger(__name__)
 
 class CodeParser:
     """
@@ -22,15 +24,18 @@ class CodeParser:
         filepath = Path(filepath)
         # Skip test-related files
         if 'test' in str(filepath).lower() or 'spec' in str(filepath).lower() or 'conftest' in str(filepath).lower():
+            logger.debug(f"Skipping test file: {filepath}")
             return results
         try:
             source = filepath.read_text(encoding="utf-8")
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to read file {filepath}: {str(e)}")
             return results
 
         try:
             node = ast.parse(source, filename=str(filepath))
-        except SyntaxError:
+        except SyntaxError as e:
+            logger.warning(f"Syntax error in {filepath}: {str(e)}")
             return results
 
         for child in ast.iter_child_nodes(node):
@@ -81,6 +86,7 @@ class CodeParser:
 
     def analyze_directory(self) -> List[Dict[str, Any]]:
         elements: List[Dict[str, Any]] = []
+        logger.info(f"Starting directory analysis: {self.project_dir}")
         
         # Dossiers à bannir (en minuscules pour la comparaison)
         BLACKLIST_DIRS = {'tests', 'testing', 'docs', 'scripts', 'examples', 'venv', '.git', 'test', 'spec', 'conftest'}
