@@ -19,8 +19,8 @@ from generator.visual_creator import create_visual_summary
 def test_code_parser_empty_directory():
     """CodeParser on truly empty dir should return empty list."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        cp = CodeParser(tmpdir)
-        result = cp.analyze_directory()
+        cp = CodeParser()
+        result = cp.analyze_directory(tmpdir)
         assert isinstance(result, list)
         assert len(result) == 0
 
@@ -42,8 +42,8 @@ class Greeter:
 """)
     
     try:
-        cp = CodeParser(str(PROJECT_ROOT))
-        result = cp.analyze_file(str(test_file))
+        cp = CodeParser()
+        result = cp.parse_file(str(test_file))
         assert len(result) >= 2  # At least function + class
         
         func = [r for r in result if r["type"] == "function"]

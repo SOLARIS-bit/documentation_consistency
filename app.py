@@ -30,8 +30,7 @@ DEFAULT_CONFIG = {
     "max_issues_shown": 100,
     "exclude_dirs": ["tests", "venv", "docs", ".git"],
     "llm_model": "gpt-4o-mini",
-    "llm_temperature": 0.1,
-    "github_timeout_seconds": 30
+    "llm_temperature": 0.1
 }
 
 def load_config():
@@ -228,10 +227,11 @@ if uploaded_project:
             # ---- Issue Summary ----
             if issues:
                 st.subheader("📊 Issue Summary")
-                missing_classes = sum(1 for i in issues if "MISSING_DOC_CLASS" in i)
-                missing_methods = sum(1 for i in issues if "MISSING_DOC_METHOD" in i)
-                missing_functions = sum(1 for i in issues if "MISSING_DOC_FUNCTION" in i)
-                param_issues = sum(1 for i in issues if "INCONSISTENCY_PARAM" in i)
+                breakdown = result.get("issues_by_type", {})
+                missing_classes = breakdown.get("MISSING_DOC_CLASS", 0)
+                missing_methods = breakdown.get("MISSING_DOC_METHOD", 0)
+                missing_functions = breakdown.get("MISSING_DOC_FUNCTION", 0)
+                param_issues = breakdown.get("INCONSISTENCY_PARAM", 0)
                 
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
@@ -277,25 +277,97 @@ if uploaded_project:
                 # Si suggestions est une string (avec notre nouveau code), on l'affiche directement
                 st.markdown(suggestions)
             
-            # ---- Module-level coverage chart ----
-            st.subheader("📊 Documentation Health Map")
-            modules = [i.split(".")[0] for i in issues] if issues else []
-            df = pd.DataFrame({"module": modules})
-            
-            if not df.empty:
-                coverage_counts = df["module"].value_counts()
-                
-                # Style moderne
-                plt.style.use('ggplot') 
-                fig, ax = plt.subplots(figsize=(10, 4))
-                coverage_counts.plot(kind="barh", ax=ax, color="#FF4B4B")
-                
-                ax.set_title("Missing Items per Module", fontsize=14, pad=20)
-                ax.set_xlabel("Count", fontsize=12)
-                ax.set_ylabel("Module", fontsize=12)
-                plt.tight_layout()
-                
-                st.pyplot(fig, clear_figure=True)
+            # ---- Charts ----
+            st.subheader("📈 Charts")
+            stats = result.get("stats", {})
+            issues_by_type = result.get("issues_by_type", {})
+
+            colA, colB = st.columns(2)
+            with colA:
+                st.markdown("**Issues by Type**")
+                labels = list(issues_by_type.keys())
+                values = [issues_by_type[k] for k in labels]
+                try:
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    ax.bar(labels, values, color=["#e74c3c", "#e67e22", "#f1c40f", "#3498db"])  # red, orange, yellow, blue
+                    ax.set_ylabel("Count")
+                    ax.set_xticklabels(labels, rotation=30, ha='right')
+                    ax.grid(axis='y', alpha=0.2)
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                except Exception as e:
+                    st.info(f"Chart unavailable: {e}")
+
+            with colB:
+                st.markdown("**Documentation Coverage (approx.)**")
+                total_elements = max(int(stats.get("total_elements", 0)), 1)
+                missing_total = sum(issues_by_type.get(k, 0) for k in [
+                    "MISSING_DOC_CLASS", "MISSING_DOC_METHOD", "MISSING_DOC_FUNCTION"
+                ])
+                documented = max(total_elements - missing_total, 0)
+                try:
+                    fig2, ax2 = plt.subplots(figsize=(6, 4))
+                    ax2.pie([documented, missing_total], labels=["Documented", "Missing"], autopct='%1.1f%%',
+                            colors=["#2ecc71", "#e74c3c"], startangle=140)
+                    ax2.axis('equal')
+                    plt.tight_layout()
+                    st.pyplot(fig2)
+                except Exception as e:
+                    st.info(f"Coverage chart unavailable: {e}")
+
+            # ---- Top Offenders by File ----
+            if issues:
+                st.subheader("🔥 Top Offenders (by file)")
+                # Parse file names embedded by comparator ("| file: <path>")
+                file_counts = {}
+                for msg in issues:
+                    if "| file:" in msg:
+                        try:
+                            part = msg.split("| file:", 1)[1].strip()
+                            # Remove trailing separators if any
+                            file_key = part.strip()
+                            if file_key:
+                                file_counts[file_key] = file_counts.get(file_key, 0) + 1
+                        except Exception:
+                            continue
+
+                if file_counts:
+                    # Sort and take top N
+                    top_items = sorted(file_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+                    files = [f for f, _ in top_items]
+                    counts = [c for _, c in top_items]
+
+                    try:
+                        fig3, ax3 = plt.subplots(figsize=(10, 5))
+                        ax3.barh(range(len(files)), counts, color="#FF4B4B")
+                        ax3.set_yticks(range(len(files)))
+                        ax3.set_yticklabels(files)
+                        ax3.invert_yaxis()
+                        ax3.set_xlabel("Issues")
+                        ax3.set_title("Top Files with Missing/Inconsistent Docs")
+                        plt.tight_layout()
+                        st.pyplot(fig3)
+                    except Exception as e:
+                        st.info(f"Top offenders chart unavailable: {e}")
+
+                    # Optional Altair interactive view
+                    try:
+                        import altair as alt  # type: ignore
+                        import pandas as pd
+                        df_top = pd.DataFrame({"file": files, "issues": counts})
+                        chart = (
+                            alt.Chart(df_top)
+                            .mark_bar(color="#FF4B4B")
+                            .encode(
+                                x=alt.X("issues:Q", title="Issues"),
+                                y=alt.Y("file:N", sort='-x', title="File"),
+                                tooltip=["file", "issues"]
+                            )
+                            .properties(width=700, height=300)
+                        )
+                        st.altair_chart(chart, use_container_width=True)
+                    except Exception:
+                        pass
 
             # ---- Quick Fix Button ----
             if issues:

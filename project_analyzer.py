@@ -43,6 +43,12 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
     doc_parser = DocumentationParser(directory=project_path_str)
     comparator = Comparator()
 
+    # Stats counters
+    total_elements: int = 0
+    classes_count: int = 0
+    functions_count: int = 0
+    methods_count: int = 0
+
     # CRUCIAL : On lit TOUTE la doc (README, etc.) une seule fois ici
     all_docs = doc_parser.parse_directory() 
 
@@ -52,6 +58,17 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
         try:
             # On extrait les fonctions/classes du fichier Python
             code_info = parser.analyze_file(file_str)
+
+            # Update stats counters
+            for el in code_info:
+                total_elements += 1
+                t = el.get("type")
+                if t == "class":
+                    classes_count += 1
+                elif t == "function":
+                    functions_count += 1
+                elif t == "method":
+                    methods_count += 1
             
             # AU LIEU DE : doc_info = doc_parser.parse_file(file_str)
             # ON UTILISE : all_docs qu'on a chargé plus haut
@@ -64,11 +81,29 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
         except Exception:
             continue
 
+    # Issues by type breakdown
+    missing_classes = sum(1 for i in issues if "MISSING_DOC_CLASS" in i)
+    missing_methods = sum(1 for i in issues if "MISSING_DOC_METHOD" in i)
+    missing_functions = sum(1 for i in issues if "MISSING_DOC_FUNCTION" in i)
+    param_issues = sum(1 for i in issues if "INCONSISTENCY_PARAM" in i)
+
     result: Dict[str, Any] = {
         "status": "ok" if checked_samples > 0 else "fallback",
         "issues": issues,
         "checked_samples": checked_samples,
         "mode": "deterministic",
+        "stats": {
+            "total_elements": total_elements,
+            "classes": classes_count,
+            "functions": functions_count,
+            "methods": methods_count,
+        },
+        "issues_by_type": {
+            "MISSING_DOC_CLASS": missing_classes,
+            "MISSING_DOC_METHOD": missing_methods,
+            "MISSING_DOC_FUNCTION": missing_functions,
+            "INCONSISTENCY_PARAM": param_issues,
+        }
     }
 
     # ------------------------

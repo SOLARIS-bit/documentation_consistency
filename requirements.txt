@@ -2,6 +2,7 @@ streamlit
 pandas
 matplotlib
 pillow
+altair
 langchain
 langchain-community
 langchain-core

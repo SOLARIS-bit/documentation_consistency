@@ -32,8 +32,8 @@ def test_code_parser_returns_list():
         assert analyzer_pkg is not None, "Neither analyzer.code_parser nor analyzer package available"
         return
 
-    cp = CodeParser(str(PROJECT_ROOT))
-    elems = cp.analyze_directory()
+    cp = CodeParser()
+    elems = cp.analyze_directory(str(PROJECT_ROOT))
     assert isinstance(elems, list)
     # each element, if present, should be a dict with common keys
     if elems:

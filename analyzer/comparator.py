@@ -60,20 +60,20 @@ class Comparator:
                 # Catégoriser le type d'élément manquant
                 element_type = element.get("type", "unknown")
                 if element_type == "class":
-                    issues.append(f"MISSING_DOC_CLASS: {full_name}")
+                    issues.append(f"MISSING_DOC_CLASS: {full_name} | file: {element.get('file','')} ")
                 elif element_type == "method":
-                    issues.append(f"MISSING_DOC_METHOD: {full_name}")
+                    issues.append(f"MISSING_DOC_METHOD: {full_name} | file: {element.get('file','')} ")
                 elif element_type == "function":
-                    issues.append(f"MISSING_DOC_FUNCTION: {full_name}")
+                    issues.append(f"MISSING_DOC_FUNCTION: {full_name} | file: {element.get('file','')} ")
                 else:
-                    issues.append(f"MISSING_DOC: {full_name}")
+                    issues.append(f"MISSING_DOC: {full_name} | file: {element.get('file','')} ")
                 continue
 
             # --- 3. Vérification des Paramètres ---
             args = element.get("args", [])
             for arg in args:
                 if arg.lower() not in all_doc_text:
-                    issues.append(f"INCONSISTENCY_PARAM: Parameter '{arg}' of '{short_name}' missing in docs")
+                    issues.append(f"INCONSISTENCY_PARAM: Parameter '{arg}' of '{short_name}' missing in docs | file: {element.get('file','')} ")
 
         return issues
 
