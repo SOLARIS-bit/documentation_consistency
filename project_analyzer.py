@@ -30,6 +30,9 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
     project_path_str: str = str(project_path)
     project_path_obj: Path = Path(project_path_str)
     
+    # Extract project name from path (last component)
+    project_name: str = project_path_obj.name if project_path_obj.name else "Project"
+    
     logger.info(f"Starting project analysis: {project_path_str}")
 
     # Get Python files
@@ -92,6 +95,8 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
         "issues": issues,
         "checked_samples": checked_samples,
         "mode": "deterministic",
+        "project_name": project_name,
+        "project_path": project_path_str,
         "stats": {
             "total_elements": total_elements,
             "classes": classes_count,

@@ -161,7 +161,7 @@ def create_pdf_report(result: Dict[str, Any], output_path: str = "analysis_repor
     Generate a multi-page professional PDF report with header, styling, and charts.
 
     Pages:
-    - Cover page with header/logo styling and summary metrics
+    - Cover page with header/logo styling, project name, and summary metrics
     - Issues by type (bar chart)
     - Documentation coverage (pie chart)
     - Top offenders by file (horizontal bar chart)
@@ -171,7 +171,7 @@ def create_pdf_report(result: Dict[str, Any], output_path: str = "analysis_repor
     ----------
     result : Dict[str, Any]
         Analyzer result dict including 'issues', 'checked_samples', 'mode',
-        with optional 'stats' and 'issues_by_type'.
+        'project_name', with optional 'stats' and 'issues_by_type'.
     output_path : str
         Destination PDF path.
 
@@ -184,6 +184,7 @@ def create_pdf_report(result: Dict[str, Any], output_path: str = "analysis_repor
     checked: int = int(result.get("checked_samples", 0))
     status: str = str(result.get("status", "unknown"))
     mode: str = str(result.get("mode", "unknown"))
+    project_name: str = str(result.get("project_name", "Project"))
 
     stats: Dict[str, Any] = result.get("stats", {})
     issues_by_type: Dict[str, int] = result.get("issues_by_type", {})
@@ -231,7 +232,7 @@ def create_pdf_report(result: Dict[str, Any], output_path: str = "analysis_repor
         score = max(0, 100 - (issues_per_file * 10))
 
     with PdfPages(output_path) as pdf:
-        # --- Page 1: Cover with header/logo styling ---
+        # --- Page 1: Cover with header/logo styling and PROJECT NAME ---
         fig1 = plt.figure(figsize=(11.69, 8.27))  # A4 landscape
         fig1.patch.set_facecolor('#0a0a0a')
         
@@ -247,9 +248,13 @@ def create_pdf_report(result: Dict[str, Any], output_path: str = "analysis_repor
                       fontsize=20, color="#2ecc71" if score > 80 else "#e74c3c", 
                       weight='bold', ha='right', va='center')
 
+        # PROJECT NAME prominently displayed
+        fig1.text(0.5, 0.78, f"Project: {project_name}", 
+                 ha='center', fontsize=28, color="#00C8FF", weight='bold', style='italic')
+
         # Summary section
         text_lines = [
-            ("Project Analysis Summary", 18, "#00C8FF", 'bold'),
+            ("Analysis Summary", 18, "#00C8FF", 'bold'),
             ("", 10, "#fff", 'normal'),
             (f"Status: {status.upper()}", 14, "#2ecc71" if status == "ok" else "#e74c3c", 'normal'),
             (f"Analysis Mode: {mode}", 14, "#fff", 'normal'),
