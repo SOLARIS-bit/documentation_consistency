@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from project_analyzer import analyze_project
 from generator.text_suggester import suggest_text_improvements
-from generator.visual_creator import create_visual_summary
+from generator.visual_creator import create_visual_summary, create_pdf_report
 
 # Setup logging
 logging.basicConfig(
@@ -396,6 +396,20 @@ if uploaded_project:
                 file_name="documentation_report.txt",
                 mime="text/plain"
             )
+
+            # ---- PDF Report with charts ----
+            try:
+                pdf_path = create_pdf_report(result)
+                with open(pdf_path, "rb") as f:
+                    pdf_bytes = f.read()
+                st.download_button(
+                    label="Download PDF Report (Charts)",
+                    data=pdf_bytes,
+                    file_name="documentation_report.pdf",
+                    mime="application/pdf"
+                )
+            except Exception as e:
+                st.info(f"PDF report unavailable: {e}")
         
         except ValueError as e:
             st.error(f"❌ Validation error: {str(e)}")
