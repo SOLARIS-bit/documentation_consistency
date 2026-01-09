@@ -37,6 +37,16 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
         project_name = project_path_obj.name if project_path_obj.name else "Project"
     
     logger.info(f"Starting multi-language project analysis: {project_path_str}")
+    logger.info(f"Project path exists: {project_path_obj.exists()}")
+    logger.info(f"Project path is directory: {project_path_obj.is_dir()}")
+    
+    if project_path_obj.is_dir():
+        # List immediate contents
+        try:
+            contents = list(project_path_obj.iterdir())
+            logger.info(f"Project directory contents: {[str(p.name) for p in contents]}")
+        except Exception as e:
+            logger.warning(f"Could not list directory contents: {e}")
 
     # Initialize parsers
     py_parser = CodeParser(project_dir=project_path_str)
@@ -81,12 +91,29 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
             issues.extend(comparison)
         
         checked_samples = len([e for e in code_elements if e.get("file")])
-        logger.info(f"Tree-sitter analysis found {total_elements} elements in {len(languages_found)} languages")
+        
+        if total_elements > 0:
+            logger.info(f"Tree-sitter analysis found {total_elements} elements in {len(languages_found)} languages")
+        else:
+            # Tree-sitter returned no results, fallback to Python parser
+            logger.warning("Tree-sitter found no code elements, falling back to Python parser")
+            raise ValueError("Tree-sitter returned no elements")
     
     except Exception as e:
         logger.warning(f"Tree-sitter analysis failed, falling back to Python parser: {e}")
+        # Reset counters for fallback
+        total_elements = 0
+        classes_count = 0
+        functions_count = 0
+        methods_count = 0
+        checked_samples = 0
+        languages_found = set()
+        issues = []
+        
         # Fallback to Python-only parser
         py_files = list(project_path_obj.rglob("*.py"))
+        logger.info(f"Fallback: Found {len(py_files)} Python files to analyze")
+        
         for file_path in py_files:
             file_str = str(file_path)
             try:
@@ -107,7 +134,8 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
                     issues.extend(comparison)
                 
                 checked_samples += 1
-            except Exception:
+            except Exception as ex:
+                logger.debug(f"Error parsing {file_str}: {ex}")
                 continue
 
     # Issues by type breakdown

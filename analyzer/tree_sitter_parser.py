@@ -12,6 +12,15 @@ except ImportError:
     HAS_TREE_SITTER = False
     logger.warning("tree-sitter not installed. Install with: pip install tree-sitter")
 
+# Try to import pre-built language libraries
+HAS_TREE_SITTER_LANGUAGES = False
+try:
+    import tree_sitter_languages as tsl
+    HAS_TREE_SITTER_LANGUAGES = True
+    logger.debug("tree-sitter-languages package available")
+except ImportError:
+    logger.debug("tree-sitter-languages package not found")
+
 
 class TreeSitterParser:
     """
@@ -43,24 +52,46 @@ class TreeSitterParser:
     def _initialize_parsers(self):
         """Initialize tree-sitter parsers for all supported languages."""
         if not HAS_TREE_SITTER:
-            logger.warning("tree-sitter not available; falling back to Python AST parser")
+            logger.warning("tree-sitter not available; will use fallback Python parser")
             return
 
         supported_langs = ['python', 'java', 'c', 'cpp', 'go', 'javascript', 'typescript', 'rust', 'c_sharp']
+        initialized_count = 0
         
         for lang in supported_langs:
             try:
-                # Load the language library
-                lib_path = self._get_language_lib_path(lang)
-                if lib_path and os.path.exists(lib_path):
-                    language = Language(lib_path, lang)
+                language = None
+                
+                # Try tree-sitter-languages package first (easier to use)
+                if HAS_TREE_SITTER_LANGUAGES:
+                    try:
+                        language = tsl.get_language(lang)
+                        logger.debug(f"Loaded {lang} from tree-sitter-languages")
+                    except Exception as e:
+                        logger.debug(f"Could not load {lang} from tree-sitter-languages: {e}")
+                
+                # Fallback to manual library loading
+                if language is None:
+                    lib_path = self._get_language_lib_path(lang)
+                    if lib_path and os.path.exists(lib_path):
+                        language = Language(lib_path, lang)
+                        logger.debug(f"Loaded {lang} from manual library path: {lib_path}")
+                
+                # Register the language
+                if language is not None:
                     self.languages[lang] = language
                     parser = Parser()
                     parser.set_language(language)
                     self.parsers[lang] = parser
-                    logger.info(f"Initialized parser for {lang}")
+                    initialized_count += 1
+                    logger.debug(f"Initialized parser for {lang}")
+                else:
+                    logger.debug(f"Language library not found for {lang}")
             except Exception as e:
                 logger.debug(f"Could not initialize {lang} parser: {e}")
+        
+        if initialized_count == 0:
+            logger.warning(f"No tree-sitter language libraries found. Install with: pip install tree-sitter-languages")
 
     def _get_language_lib_path(self, lang: str) -> Optional[str]:
         """Get the path to the tree-sitter language library."""

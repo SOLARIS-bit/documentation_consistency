@@ -119,9 +119,14 @@ class CodeParser:
                     continue
 
                 path = Path(root) / fname
+                logger.debug(f"Analyzing Python file: {path}")
                 try:
-                    elements.extend(self.analyze_file(path))
+                    file_elements = self.analyze_file(path)
+                    if file_elements:
+                        logger.debug(f"Found {len(file_elements)} elements in {fname}")
+                    elements.extend(file_elements)
                 except Exception as e:
-                    print(f"Error parsing {fname}: {e}")
+                    logger.error(f"Error parsing {fname}: {e}")
 
+        logger.info(f"Directory analysis complete: found {len(elements)} total elements")
         return elements
