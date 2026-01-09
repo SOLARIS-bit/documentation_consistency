@@ -58,6 +58,12 @@ class TreeSitterParser:
         supported_langs = ['python', 'java', 'c', 'cpp', 'go', 'javascript', 'typescript', 'rust', 'c_sharp']
         initialized_count = 0
         
+        # Map language names for tree-sitter-languages (they use dashes not underscores)
+        lang_name_map = {
+            'c_sharp': 'c-sharp',
+            'cpp': 'cpp',
+        }
+        
         for lang in supported_langs:
             try:
                 language = None
@@ -65,8 +71,10 @@ class TreeSitterParser:
                 # Try tree-sitter-languages package first (easier to use)
                 if HAS_TREE_SITTER_LANGUAGES:
                     try:
-                        language = tsl.get_language(lang)
-                        logger.debug(f"Loaded {lang} from tree-sitter-languages")
+                        # tree-sitter-languages uses different naming (e.g., 'c-sharp' instead of 'c_sharp')
+                        tsl_name = lang_name_map.get(lang, lang)
+                        language = tsl.get_language(tsl_name)
+                        logger.debug(f"Loaded {lang} from tree-sitter-languages as '{tsl_name}'")
                     except Exception as e:
                         logger.debug(f"Could not load {lang} from tree-sitter-languages: {e}")
                 
