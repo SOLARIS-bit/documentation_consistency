@@ -293,6 +293,7 @@ if uploaded_project:
                     fig, ax = plt.subplots(figsize=(6, 4))
                     ax.bar(labels, values, color=["#e74c3c", "#e67e22", "#f1c40f", "#3498db"])  # red, orange, yellow, blue
                     ax.set_ylabel("Count")
+                    ax.set_xticks(range(len(labels)))
                     ax.set_xticklabels(labels, rotation=30, ha='right')
                     ax.grid(axis='y', alpha=0.2)
                     plt.tight_layout()
@@ -390,7 +391,11 @@ if uploaded_project:
             report_content = f"ANALYSIS REPORT\n{'='*20}\n"
             report_content += f"Issues found: {len(issues)}\n\n"
             report_content += "ISSUES:\n" + "\n".join(issues)
-            report_content += f"\n\nSUGGESTIONS:\n{suggestions}"
+            
+            # Include LLM analysis if available
+            llm_analysis = result.get("llm_analysis", "")
+            if llm_analysis:
+                report_content += f"\n\nAI SUGGESTIONS:\n{llm_analysis}"
 
             st.download_button(
                 label="Download Full Text Report",
