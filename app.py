@@ -187,11 +187,13 @@ if uploaded_project:
             st.success(f"✅ Project extracted successfully")
             
             project_path = str(project_dir)
+            # Extract project name from ZIP filename (remove .zip extension)
+            project_name = Path(uploaded_project.name).stem
 
             # ---- Run analysis ----
             st.info("🔍 Running analysis...")
             try:
-                result = analyze_project(project_path)
+                result = analyze_project(project_path, project_name=project_name)
                 logger.info(f"Analysis complete: {len(result.get('issues', []))} issues found")
             except Exception as e:
                 logger.error(f"Analysis failed: {str(e)}")

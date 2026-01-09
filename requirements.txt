@@ -8,3 +8,5 @@ langchain-community
 langchain-core
 openai
 tiktoken
+tree-sitter>=0.20.0
+tree-sitter-languages>=1.10.2

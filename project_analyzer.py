@@ -3,6 +3,7 @@ from typing import Dict, List, Any, Optional, Union
 import logging
 
 from analyzer.code_parser import CodeParser
+from analyzer.tree_sitter_parser import TreeSitterParser
 from analyzer.doc_parser import DocumentationParser
 from analyzer.comparator import Comparator
 
@@ -23,26 +24,23 @@ except Exception as e:
     logger.debug(f"LLM support disabled: {str(e)}")
 
 
-def analyze_project(project_path: str) -> Dict[str, Any]:
+def analyze_project(project_path: str, project_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Full project analyzer: returns dict with status, issues, samples, mode, optional llm result.
+    Supports multiple languages via tree-sitter (Java, C, C++, Go, JavaScript, etc.)
     """
     project_path_str: str = str(project_path)
     project_path_obj: Path = Path(project_path_str)
     
-    # Extract project name from path (last component)
-    project_name: str = project_path_obj.name if project_path_obj.name else "Project"
+    # Use provided project_name or extract from path (last component)
+    if project_name is None:
+        project_name = project_path_obj.name if project_path_obj.name else "Project"
     
-    logger.info(f"Starting project analysis: {project_path_str}")
+    logger.info(f"Starting multi-language project analysis: {project_path_str}")
 
-    # Get Python files
-    py_files: List[Path] = list(project_path_obj.rglob("*.py"))  # type: ignore
-    checked_samples: int = 0
-    
-    logger.debug(f"Found {len(py_files)} Python files in project")
-    issues: List[str] = []
-
-    parser = CodeParser(project_dir=project_path_str)
+    # Initialize parsers
+    py_parser = CodeParser(project_dir=project_path_str)
+    ts_parser = TreeSitterParser(project_dir=project_path_str)
     doc_parser = DocumentationParser(directory=project_path_str)
     comparator = Comparator()
 
@@ -51,38 +49,66 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
     classes_count: int = 0
     functions_count: int = 0
     methods_count: int = 0
+    languages_found: set = set()
+    checked_samples: int = 0
+    issues: List[str] = []
 
-    # CRUCIAL : On lit TOUTE la doc (README, etc.) une seule fois ici
-    all_docs = doc_parser.parse_directory() 
+    # Load all documentation once
+    all_docs = doc_parser.parse_directory()
 
-    for file_path in py_files:
-        file_str: str = str(file_path)
-
-        try:
-            # On extrait les fonctions/classes du fichier Python
-            code_info = parser.analyze_file(file_str)
-
-            # Update stats counters
-            for el in code_info:
-                total_elements += 1
-                t = el.get("type")
-                if t == "class":
-                    classes_count += 1
-                elif t == "function":
-                    functions_count += 1
-                elif t == "method":
-                    methods_count += 1
+    # Try tree-sitter first for all files
+    logger.info("Analyzing project with tree-sitter (multi-language support)...")
+    try:
+        code_elements = ts_parser.analyze_directory()
+        
+        for el in code_elements:
+            total_elements += 1
+            t = el.get("type")
+            if t == "class":
+                classes_count += 1
+            elif t == "function":
+                functions_count += 1
+            elif t == "method":
+                methods_count += 1
             
-            # AU LIEU DE : doc_info = doc_parser.parse_file(file_str)
-            # ON UTILISE : all_docs qu'on a chargé plus haut
-            comparison = comparator.compare(code_info, all_docs)
-
-            if comparison:
-                issues.extend(comparison)
-
-            checked_samples += 1
-        except Exception:
-            continue
+            lang = el.get("language", "unknown")
+            if lang != "unknown":
+                languages_found.add(lang)
+        
+        # Compare with documentation
+        comparison = comparator.compare(code_elements, all_docs)
+        if comparison:
+            issues.extend(comparison)
+        
+        checked_samples = len([e for e in code_elements if e.get("file")])
+        logger.info(f"Tree-sitter analysis found {total_elements} elements in {len(languages_found)} languages")
+    
+    except Exception as e:
+        logger.warning(f"Tree-sitter analysis failed, falling back to Python parser: {e}")
+        # Fallback to Python-only parser
+        py_files = list(project_path_obj.rglob("*.py"))
+        for file_path in py_files:
+            file_str = str(file_path)
+            try:
+                code_info = py_parser.analyze_file(file_str)
+                
+                for el in code_info:
+                    total_elements += 1
+                    t = el.get("type")
+                    if t == "class":
+                        classes_count += 1
+                    elif t == "function":
+                        functions_count += 1
+                    elif t == "method":
+                        methods_count += 1
+                
+                comparison = comparator.compare(code_info, all_docs)
+                if comparison:
+                    issues.extend(comparison)
+                
+                checked_samples += 1
+            except Exception:
+                continue
 
     # Issues by type breakdown
     missing_classes = sum(1 for i in issues if "MISSING_DOC_CLASS" in i)
@@ -97,6 +123,7 @@ def analyze_project(project_path: str) -> Dict[str, Any]:
         "mode": "deterministic",
         "project_name": project_name,
         "project_path": project_path_str,
+        "languages": sorted(list(languages_found)) if languages_found else ["python"],
         "stats": {
             "total_elements": total_elements,
             "classes": classes_count,
