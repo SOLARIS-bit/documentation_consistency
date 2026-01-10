@@ -11,11 +11,35 @@ La première couche est celle de l'interface utilisateur, représentée par le f
 
 Cette séparation en couches offre plusieurs avantages significatifs pour le développement et la maintenance du projet. Chaque module peut être développé, testé et maintenu de manière indépendante sans affecter les autres parties du système. Les modules peuvent être réutilisés dans différents contextes, que ce soit une interface en ligne de commande, une API REST ou une interface web. L'ajout de nouvelles fonctionnalités se fait par extension plutôt que par modification du code existant, ce qui réduit le risque d'introduire des régressions. La séparation des préoccupations facilite la compréhension du code pour les nouveaux développeurs et simplifie la correction des bugs.
 
-## 2.2 Modules d'analyse du code et de la documentation
+## 2.2 Modules d'analyse du code et de la documentation - Architecture multi-langue
 
-Le cœur du système d'analyse repose sur deux modules complémentaires qui extraient respectivement les informations du code source et de la documentation. Le module code_parser utilise le module ast de Python pour analyser statiquement le code source sans avoir à l'exécuter. Cette approche garantit la sécurité puisque le code analysé n'est jamais exécuté, même s'il contient du code malveillant potentiel. Le parseur transforme chaque fichier Python en un arbre syntaxique abstrait qui représente la structure logique du code indépendamment de sa syntaxe exacte.
+Le cœur du système d'analyse repose sur deux approches complémentaires qui extraient respectivement les informations du code source et de la documentation avec support multi-langue.
 
-Le code_parser parcourt récursivement toute l'arborescence du projet en cherchant les fichiers Python. Pour chaque fichier trouvé, il extrait les classes avec leur nom, leur position dans le fichier et leur docstring éventuelle. Pour chaque classe, il identifie également toutes ses méthodes. Les fonctions autonomes, celles qui ne sont pas définies dans une classe, sont également cataloguées avec les mêmes informations. Le système applique des filtres intelligents pour exclure automatiquement les répertoires qui ne contiennent généralement pas de code de production, comme les dossiers de tests, d'exemples, de documentation ou l'environnement virtuel. Cette exclusion évite de polluer les résultats avec des éléments qui n'ont pas vocation à être documentés dans le README principal.
+### Parsing multi-langue avec SimpleRegexParser
+
+Le module **regex_parser** implementé en version 2.1.0 utilise des expressions régulières spécifiques à chaque langage pour analyser le code sans dépendre de binaires externes. Cette approche offre plusieurs avantages critiques:
+
+1. **Zéro dépendances binaires**: Aucun compilateur ou bibliothèque native requise
+2. **Support multi-langue**: Java, Go, JavaScript, TypeScript, C/C++, Rust, C#, PHP, Ruby, Python
+3. **Déploiement cloud-ready**: Fonctionne sur toutes les plateformes (Streamlit Cloud, Lambda, Docker, etc.)
+4. **Performance**: Analyse O(n) linéaire basée sur le nombre de fichiers
+
+Le SimpleRegexParser parcourt récursivement l'arborescence du projet en cherchant les fichiers supportés selon leur extension. Pour chaque fichier, il applique les patterns regex spécifiques au langage pour extraire:
+- Classes et structures
+- Fonctions et méthodes
+- Numéros de ligne
+- Métadonnées par langage
+
+### Parsing Python natif avec Python AST
+
+Pour les projets Python, le système utilise le **module ast** de la bibliothèque standard Python qui offre une analyse plus précise et complète que regex. Le AST parser extrait:
+- Classes avec héritage
+- Fonctions autonomes et méthodes
+- Docstrings complets
+- Signatures de fonction et paramètres
+- Métadonnées détaillées
+
+Ce parser est activé comme fallback automatique lorsque SimpleRegexParser trouve zéro éléments, garantissant une couverture maximale pour les projets Python.
 
 Le module doc_parser complète cette extraction en parcourant le projet à la recherche de fichiers de documentation. Il supporte plusieurs formats courants comme le Markdown, le texte brut et le reStructuredText. Le système porte une attention particulière aux fichiers spéciaux comme README, CHANGELOG ou CONTRIBUTING qui constituent souvent la documentation principale d'un projet. Pour chaque fichier de documentation trouvé, le contenu est lu, normalisé et indexé par nom de fichier pour faciliter les recherches ultérieures. Les deux parseurs gèrent de manière robuste les erreurs potentielles comme les fichiers illisibles, les erreurs de syntaxe Python ou les problèmes d'encodage, et enregistrent ces événements dans les logs pour assurer la traçabilité.
 

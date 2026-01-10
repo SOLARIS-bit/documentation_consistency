@@ -11,13 +11,31 @@ La phase de validation constitue le premier rempart de sécurité du système. L
 
 Une fois la validation réussie, le système extrait le contenu dans un répertoire temporaire isolé. Ce répertoire est créé avec des permissions restrictives et sera automatiquement nettoyé à la fin de l'analyse, qu'elle se termine avec succès ou qu'elle échoue. Cette approche garantit qu'aucun fichier temporaire ne reste sur le système après le traitement.
 
-## 3.2 Phase d'extraction et de parsing
+## 3.2 Phase d'extraction et de parsing multi-langue
 
-L'analyse commence véritablement par la phase d'extraction des éléments de code. Le système parcourt récursivemment toute l'arborescence du projet en cherchant les fichiers Python. Pour chaque fichier Python découvert, le système lit son contenu et le transforme en un arbre syntaxique abstrait grâce au module ast de Python. Cette représentation abstraite permet d'analyser la structure du code sans l'exécuter, ce qui est crucial pour la sécurité et la performance.
+L'analyse commence véritablement par la phase d'extraction des éléments de code. Le système utilise désormais un pipeline intelligent qui combine deux approches complémentaires pour garantir une couverture maximale.
 
-Durant cette extraction, le système identifie et catalogue tous les éléments structurels du code. Les classes sont détectées avec leur nom, leur position dans le fichier et leur docstring si elle existe. Pour chaque classe, le système extrait également la liste de ses méthodes. Les fonctions autonomes, celles qui ne sont pas définies dans une classe, sont également répertoriées avec les mêmes informations. Le système enregistre méticuleusement le numéro de ligne où chaque élément est défini, ce qui facilitera plus tard la création de références précises dans le rapport.
+### Extraction multi-langue
 
-Le système applique des filtres intelligents durant cette phase. Les répertoires standards qui ne contiennent généralement pas de code de production, comme les dossiers de tests, d'exemples, de documentation, ou l'environnement virtuel, sont automatiquement exclus de l'analyse. Cette exclusion évite de polluer les résultats avec des éléments qui n'ont pas vocation à être documentés dans le README principal du projet.
+Le système parcourt récursivement l'arborescence du projet en cherchant les fichiers supportés selon leur extension (Java, Go, JS, TS, C, C++, Rust, C#, PHP, Ruby, Python). Pour chaque fichier découvert, le système applique les patterns regex spécifiques au langage via le **SimpleRegexParser** pour identifier:
+- Classes et structures  
+- Fonctions et méthodes
+- Numéros de ligne précis
+- Métadonnées par langage
+- Balises de langue pour chaque élément
+
+Cette approche regex est performante pour ~95% des cas standards et n'a aucune dépendance binaire, ce qui est crucial pour le déploiement en cloud.
+
+### Fallback intelligent avec Python AST
+
+Si le SimpleRegexParser retourne zéro éléments (par exemple sur un dossier sans fichiers supportés), le système bascule automatiquement vers le **Python AST Parser** qui offre une analyse plus précise pour les fichiers Python. Le AST parser extrait:
+- Classes avec héritage détaillé
+- Fonctions autonomes et méthodes de classe
+- Docstrings complets et métadonnées
+- Signatures de fonction et paramètres
+- Informations d'héritage et décorateurs
+
+Ce fallback garantit qu'aucun projet Python n'est laissé non analysé.
 
 Parallèlement au parsing du code, le système effectue l'extraction de la documentation existante. Il recherche tous les fichiers de documentation dans le projet, principalement les fichiers Markdown mais aussi les fichiers texte brut et reStructuredText. Le système porte une attention particulière aux fichiers spéciaux comme README, CHANGELOG, CONTRIBUTING qui constituent souvent la documentation principale d'un projet. Le contenu de chaque fichier de documentation est lu, normalisé et indexé pour faciliter les recherches ultérieures.
 
