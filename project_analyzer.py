@@ -3,7 +3,7 @@ from typing import Dict, List, Any, Optional, Union
 import logging
 
 from analyzer.code_parser import CodeParser
-from analyzer.tree_sitter_parser import TreeSitterParser
+from analyzer.regex_parser import SimpleRegexParser
 from analyzer.doc_parser import DocumentationParser
 from analyzer.comparator import Comparator
 
@@ -50,7 +50,7 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
 
     # Initialize parsers
     py_parser = CodeParser(project_dir=project_path_str)
-    ts_parser = TreeSitterParser(project_dir=project_path_str)
+    regex_parser = SimpleRegexParser(project_dir=project_path_str)
     doc_parser = DocumentationParser(directory=project_path_str)
     comparator = Comparator()
 
@@ -66,10 +66,10 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
     # Load all documentation once
     all_docs = doc_parser.parse_directory()
 
-    # Try tree-sitter first for all files
-    logger.info("Analyzing project with tree-sitter (multi-language support)...")
+    # Try regex parser first (works for all languages)
+    logger.info("Analyzing project with regex-based parser (multi-language support)...")
     try:
-        code_elements = ts_parser.analyze_directory()
+        code_elements = regex_parser.analyze_directory()
         
         for el in code_elements:
             total_elements += 1
@@ -93,11 +93,11 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
         checked_samples = len([e for e in code_elements if e.get("file")])
         
         if total_elements > 0:
-            logger.info(f"Tree-sitter analysis found {total_elements} elements in {len(languages_found)} languages")
+            logger.info(f"Regex parser found {total_elements} elements in {len(languages_found)} languages")
         else:
-            # Tree-sitter returned no results, fallback to Python parser
-            logger.warning("Tree-sitter found no code elements, falling back to Python parser")
-            raise ValueError("Tree-sitter returned no elements")
+            # Regex found nothing, try Python parser for .py files
+            logger.warning("Regex parser found no elements, trying Python AST parser")
+            raise ValueError("Regex parser returned no elements")
     
     except Exception as e:
         logger.warning(f"Tree-sitter analysis failed, falling back to Python parser: {e}")
