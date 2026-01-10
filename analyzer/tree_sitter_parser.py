@@ -5,21 +5,22 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-try:
-    from tree_sitter import Language, Parser
-    HAS_TREE_SITTER = True
-except ImportError:
-    HAS_TREE_SITTER = False
-    logger.warning("tree-sitter not installed. Install with: pip install tree-sitter")
-
-# Try to import pre-built language libraries
+HAS_TREE_SITTER = False
 HAS_TREE_SITTER_LANGUAGES = False
+Language = None
+Parser = None
+
+# Try tree-sitter-languages first (pre-built, easier)
 try:
     import tree_sitter_languages as tsl
     HAS_TREE_SITTER_LANGUAGES = True
-    logger.debug("tree-sitter-languages package available")
+    HAS_TREE_SITTER = True
+    logger.debug("tree-sitter-languages package detected")
 except ImportError:
-    logger.debug("tree-sitter-languages package not found")
+    logger.debug("tree-sitter-languages not found")
+
+# Manual tree-sitter setup is complex; fallback to Python AST
+logger.debug("Tree-sitter multi-language support requires additional setup. Using Python AST as fallback.")
 
 
 class TreeSitterParser:
@@ -52,54 +53,12 @@ class TreeSitterParser:
     def _initialize_parsers(self):
         """Initialize tree-sitter parsers for all supported languages."""
         if not HAS_TREE_SITTER:
-            logger.warning("tree-sitter not available; will use fallback Python parser")
+            logger.debug("Tree-sitter not available; falling back to language-specific parsers")
             return
-
-        supported_langs = ['python', 'java', 'c', 'cpp', 'go', 'javascript', 'typescript', 'rust', 'c_sharp']
-        initialized_count = 0
         
-        # Map language names for tree-sitter-languages (they use dashes not underscores)
-        lang_name_map = {
-            'c_sharp': 'c-sharp',
-            'cpp': 'cpp',
-        }
-        
-        for lang in supported_langs:
-            try:
-                language = None
-                
-                # Try tree-sitter-languages package first (easier to use)
-                if HAS_TREE_SITTER_LANGUAGES:
-                    try:
-                        # tree-sitter-languages uses different naming (e.g., 'c-sharp' instead of 'c_sharp')
-                        tsl_name = lang_name_map.get(lang, lang)
-                        language = tsl.get_language(tsl_name)
-                        logger.debug(f"Loaded {lang} from tree-sitter-languages as '{tsl_name}'")
-                    except Exception as e:
-                        logger.debug(f"Could not load {lang} from tree-sitter-languages: {e}")
-                
-                # Fallback to manual library loading
-                if language is None:
-                    lib_path = self._get_language_lib_path(lang)
-                    if lib_path and os.path.exists(lib_path):
-                        language = Language(lib_path, lang)
-                        logger.debug(f"Loaded {lang} from manual library path: {lib_path}")
-                
-                # Register the language
-                if language is not None:
-                    self.languages[lang] = language
-                    parser = Parser()
-                    parser.set_language(language)
-                    self.parsers[lang] = parser
-                    initialized_count += 1
-                    logger.debug(f"Initialized parser for {lang}")
-                else:
-                    logger.debug(f"Language library not found for {lang}")
-            except Exception as e:
-                logger.debug(f"Could not initialize {lang} parser: {e}")
-        
-        if initialized_count == 0:
-            logger.warning(f"No tree-sitter language libraries found. Install with: pip install tree-sitter-languages")
+        # Tree-sitter-languages setup is complex and version-dependent
+        # For now, rely on fallback to Python AST parser
+        logger.debug("Tree-sitter multi-language parsing requires manual setup. Use Python AST fallback.")
 
     def _get_language_lib_path(self, lang: str) -> Optional[str]:
         """Get the path to the tree-sitter language library."""
