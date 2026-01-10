@@ -209,6 +209,9 @@ if uploaded_project:
             st.markdown(f"- **Mode:** {result.get('mode')}")
             st.markdown(f"- **Files analyzed:** {checked_samples}")
             st.markdown(f"- **Total issues detected:** {len(issues)}")
+            # Show languages found (tree-sitter) or default to python
+            languages = result.get("languages", ["python"]) or ["python"]
+            st.markdown(f"- **Languages found:** {', '.join(languages)}")
             
             # ---- Health Score Gauge ----
             # Calculate score based on issues per file ratio
