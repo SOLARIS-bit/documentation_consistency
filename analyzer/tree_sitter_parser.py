@@ -1,14 +1,16 @@
 import os
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 
 HAS_TREE_SITTER = False
 HAS_TREE_SITTER_LANGUAGES = False
-Language = None
-Parser = None
+
+if TYPE_CHECKING:
+    Language = None
+    Parser = None
 
 # Try tree-sitter-languages first (pre-built, easier)
 try:
@@ -46,8 +48,8 @@ class TreeSitterParser:
 
     def __init__(self, project_dir: str | Path = "."):
         self.project_dir: Path = Path(project_dir)
-        self.parsers: Dict[str, Parser] = {}
-        self.languages: Dict[str, Language] = {}
+        self.parsers: Dict[str, Any] = {}
+        self.languages: Dict[str, Any] = {}
         self._initialize_parsers()
 
     def _initialize_parsers(self):

@@ -99,13 +99,15 @@ print(f"Languages: {result['languages']}")
 print(f"Issues: {len(result['issues'])}")
 ```
 
-### Recent Fixes
+### Recent Fixes & Updates
 
 1. **Multi-Language Support**: Implemented SimpleRegexParser to replace unreliable tree-sitter-languages
 2. **Fallback Mechanism**: Added Python AST parser fallback for improved accuracy
 3. **Language Detection**: UI now displays detected languages in analysis summary
 4. **PDF Reports**: Include language information on cover page
 5. **Pattern Coverage**: Added regex patterns for 9 additional languages
+6. **Dependencies Cleanup**: Removed tree-sitter/tree-sitter-languages - not needed for SimpleRegexParser
+7. **Streamlit Cloud Ready**: Deployed with minimal dependencies for cloud deployment
 
 ### Known Limitations
 

@@ -1,16 +1,18 @@
 # 📚 Documentation Consistency Assistant
 
-An AI-powered tool that verifies whether a project's documentation is consistent, complete, and up to date with its codebase. It automatically detects mismatches between code and documentation, and suggests fixes or generates missing documentation.
+An AI-powered tool that verifies whether a project's documentation is consistent, complete, and up to date with its codebase. Supports **9+ programming languages** with automatic code element extraction and documentation analysis.
 
 ## 🎯 Features
 
-- **Code Analysis**: Extracts functions, classes, methods, and docstrings from Python projects
+- **Multi-Language Support**: Analyzes Python, Java, Go, JavaScript, TypeScript, C/C++, Rust, C#, PHP, Ruby
+- **Code Analysis**: Extracts functions, classes, methods from multiple languages
 - **Documentation Scanning**: Reads and analyzes Markdown and text documentation files
 - **Consistency Checking**: Identifies undocumented functions, outdated descriptions, and parameter mismatches
 - **Smart Suggestions**: Generates improvement proposals using LLM (OpenAI) or local heuristics
-- **Visual Reports**: Creates HD PNG analysis summaries with metrics and scores
-- **Architecture Diagrams**: Generates Mermaid diagrams showing project structure
+- **Visual Reports**: Creates PDF analysis summaries with detected languages and metrics
 - **Web Dashboard**: User-friendly Streamlit interface for easy interaction
+- **Intelligent Parsing**: Regex-based multi-language support with Python AST fallback
+- **Zero Binary Dependencies**: Runs anywhere - no compiled extensions required
 - **CI/CD Ready**: GitHub Actions workflow for automated documentation checks
 
 ## 🚀 Quick Start
@@ -65,10 +67,25 @@ pytest -v
 ### Web Interface (Recommended)
 
 1. Open the dashboard: `streamlit run app.py`
-2. Upload your project as a ZIP file
+2. Upload your project as a ZIP file (any language, mixed languages OK)
 3. (Optional) Upload additional documentation as ZIP
-4. View the analysis summary
+4. View the analysis summary with detected languages
 5. Download the visual report and suggested improvements
+
+### Supported Languages
+
+| Language | Method | Status |
+|----------|--------|--------|
+| Python | Python AST | ✓ Excellent |
+| Java | Regex Parser | ✓ Working |
+| Go | Regex Parser | ✓ Working |
+| JavaScript | Regex Parser | ✓ Working |
+| TypeScript | Regex Parser | ✓ Working |
+| C/C++ | Regex Parser | ✓ Working |
+| Rust | Regex Parser | ✓ Working |
+| C# | Regex Parser | ✓ Working |
+| PHP | Regex Parser | ✓ Working |
+| Ruby | Regex Parser | ✓ Working |
 
 ### Command Line
 
