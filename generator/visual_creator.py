@@ -185,6 +185,7 @@ def create_pdf_report(result: Dict[str, Any], output_path: str = "analysis_repor
     status: str = str(result.get("status", "unknown"))
     mode: str = str(result.get("mode", "unknown"))
     project_name: str = str(result.get("project_name", "Project"))
+    languages: List[str] = result.get("languages", ["python"]) or ["python"]
 
     stats: Dict[str, Any] = result.get("stats", {})
     issues_by_type: Dict[str, int] = result.get("issues_by_type", {})
@@ -258,6 +259,7 @@ def create_pdf_report(result: Dict[str, Any], output_path: str = "analysis_repor
             ("", 10, "#fff", 'normal'),
             (f"Status: {status.upper()}", 14, "#2ecc71" if status == "ok" else "#e74c3c", 'normal'),
             (f"Analysis Mode: {mode}", 14, "#fff", 'normal'),
+            (f"Languages Found: {', '.join(languages)}", 14, "#00C8FF", 'normal'),
             (f"Files Analyzed: {checked}", 14, "#fff", 'normal'),
             (f"Total Elements Detected: {total_elements}", 14, "#fff", 'normal'),
             (f"Issues Found: {len(issues)}", 14, "#e67e22" if len(issues) > 0 else "#2ecc71", 'normal'),
