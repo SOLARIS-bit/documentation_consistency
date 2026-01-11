@@ -65,6 +65,8 @@ class SimpleRegexParser:
     def get_language_for_file(self, filepath: Path) -> Optional[str]:
         """Determine the language based on file extension."""
         ext_map = {
+            '.py': 'python',
+            '.pyw': 'python',
             '.java': 'java',
             '.c': 'c',
             '.h': 'c',
