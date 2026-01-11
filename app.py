@@ -214,10 +214,11 @@ if uploaded_project:
             st.markdown(f"- **Languages found:** {', '.join(languages)}")
             
             # ---- Health Score Gauge ----
-            # Calculate score based on total elements (more precise metric)
-            # Score = 100 * (1 - issues / elements)
+            # Calculate score based on code elements (not files)
+            # Score = 1 - (issues / total_elements)
             total_elements = result.get("stats", {}).get("total_elements", 1)
-            score = max(0, 100 * (1 - len(issues) / max(total_elements, 1)))
+            score = 100 * (1 - len(issues) / max(total_elements, 1)) if total_elements > 0 else 0
+            score = max(0, min(100, score))  # Clamp between 0-100
             
             if score > 80:
                 st.success(f"🏅 Documentation Score: {score:.1f}% - Excellent!")
