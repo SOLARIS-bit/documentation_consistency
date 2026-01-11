@@ -90,7 +90,9 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
         if comparison:
             issues.extend(comparison)
         
-        checked_samples = len([e for e in code_elements if e.get("file")])
+        # Count unique files with code elements
+        files_with_code = set(e.get("file") for e in code_elements if e.get("file"))
+        checked_samples = len(files_with_code)
         
         if total_elements > 0:
             logger.info(f"Regex parser found {total_elements} elements in {len(languages_found)} languages")
@@ -133,7 +135,9 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
                 if comparison:
                     issues.extend(comparison)
                 
-                checked_samples += 1
+                # Only count files with actual code elements
+                if len(code_info) > 0:
+                    checked_samples += 1
             except Exception as ex:
                 logger.debug(f"Error parsing {file_str}: {ex}")
                 continue
