@@ -5,34 +5,90 @@
 
 ## 1.1 Contexte et problématique
 
-Dans le développement logiciel moderne, maintenir la cohérence entre code source et documentation représente un défi permanent. Les conséquences sont significatives: onboarding complexe pour les nouveaux contributeurs, frustration des utilisateurs face aux API mal documentées, risque accru de bugs lors de la maintenance, et impact négatif sur l'adoption des projets open-source.
+La documentation constitue un pilier fondamental de la qualité et de la maintenabilité des projets logiciels. Pourtant, maintenir une cohérence parfaite entre le code source et sa documentation représente un défi permanent. Chaque modification de code devrait idéalement s'accompagner d'une mise à jour de la documentation, mais la réalité révèle un décalage fréquent et croissant entre ces deux composantes essentielles.
 
-Les approches traditionnelles présentent des limitations: la révision manuelle est chronophage et sujette aux erreurs, les outils comme Sphinx ou Doxygen génèrent de la documentation technique mais ne vérifient pas la cohérence avec les README ou guides utilisateur, et les linters traditionnels se concentrent sur la présence de docstrings sans vérifier l'alignement avec la documentation externe.
+Les conséquences sont significatives: pour les nouveaux contributeurs, une documentation obsolète constitue une barrière à l'entrée majeure; pour les utilisateurs finaux, l'absence de documentation claire engendre frustration; pour les équipes de maintenance, le manque de cohérence complique la compréhension du code et augmente le risque de bugs; pour les projets open-source, une documentation déficiente impacte directement l'adoption.
+
+Les approches traditionnelles présentent des limitations structurelles. La révision manuelle est chronophage et sujette aux erreurs. Les outils comme Sphinx ou Doxygen génèrent de la documentation technique à partir de docstrings, mais ne garantissent pas la cohérence avec la documentation utilisateur (README, guides, tutoriels). Les linters statiques vérifient la présence de docstrings, mais ne contrôlent pas leur alignement avec la documentation externe.
 
 ## 1.2 Solution proposée
 
-Le Documentation Consistency Assistant offre une solution automatisée reposant sur trois piliers: l'automatisation complète du processus d'analyse, l'intelligence contextuelle pour fournir des suggestions actionnables, et l'intégration native dans les workflows CI/CD.
+Le **Documentation Consistency Assistant** comble cette lacune en offrant une solution automatisée et intelligente de détection des incohérences entre code et documentation. L'objectif est de permettre aux équipes d'identifier rapidement les éléments non documentés ou dont la documentation est incomplète, obsolète ou inexacte.
 
-Le système combine deux approches de parsing: **SimpleRegexParser** utilise des expressions régulières spécifiques à chaque langage (9+ langages: Python, Java, Go, JavaScript, TypeScript, C/C++, Rust, C#, PHP, Ruby) sans dépendances binaires, tandis que **Python AST Parser** offre une analyse précise pour les projets Python. Cette architecture hybride garantit un déploiement cloud-ready avec zéro dépendances externes.
+La vision repose sur trois piliers:
 
-L'algorithme de comparaison met en correspondance les éléments de code avec la documentation, détecte les incohérences (absence de mention, documentation obsolète, paramètres manquants), et classifie chaque issue selon sa sévérité. Les résultats sont présentés via des rapports visuels incluant métriques, graphiques et diagrammes Mermaid intégrables dans Markdown.
+1. **Automatisation complète**: Parcourir automatiquement un projet, extraire les informations du code et de la documentation, produire un rapport sans intervention humaine.
 
-## 1.3 Technologies et architecture
+2. **Intelligence contextuelle**: Fournir non seulement des détections d'incohérences, mais aussi des suggestions pertinentes et actionnables pour les corriger.
 
-Développé en Python 3.11+ avec Streamlit pour l'interface web, le système s'appuie sur une architecture modulaire en couches: interface utilisateur, orchestration, analyse (extraction et comparaison), et génération (suggestions et visualisations). Cette séparation facilite la maintenance et l'évolution.
+3. **Intégration native**: S'insérer naturellement dans les workflows modernes (CI/CD, Git) pour garantir une vérification continue.
 
-Le mode intelligence artificielle optionnel (via OpenAI) génère des suggestions contextuelles sophistiquées suivant différents styles (Google, NumPy, Sphinx). Les diagrammes Mermaid, au format texte pur, sont versionables avec Git et rendus nativement par GitHub/GitLab.
+### Architecture technique
 
-## 1.4 Périmètre et interfaces
+Le système combine deux approches complémentaires:
 
-Les fonctionnalités couvrent l'extraction automatique des éléments de code (classes, fonctions, méthodes), le parsing de documentation (Markdown, reStructuredText, texte), la détection d'incohérences avec score de santé, et l'export multi-format (JSON, Markdown, PDF).
+**SimpleRegexParser** (approche principale): Utilise des expressions régulières spécifiques à chaque langage pour extraire les éléments de code sans dépendre de binaires externes. Supporte 9+ langages: Python, Java, Go, JavaScript, TypeScript, C/C++, Rust, C#, PHP, Ruby.
 
-Trois interfaces s'adaptent aux workflows: interface web Streamlit pour analyses ponctuelles, utilisation programmatique via imports Python pour intégrations personnalisées, et intégration CI/CD pour vérifications continues dans les pipelines GitHub Actions.
+**Python AST Parser** (fallback): Le module ast de la bibliothèque standard Python fournit une analyse plus précise pour les projets Python, avec extraction des docstrings et métadonnées détaillées.
 
-## 1.5 Bénéfices et positionnement
+Cette approche hybride offre: **zéro dépendances binaires** (cruciales pour le déploiement en cloud), une analyse rapide et une couverture linguistique étendue.
 
-Le système automatise l'identification des éléments non documentés, économisant du temps et réduisant les oublis. Les équipes bénéficient de standards documentaires objectifs appliqués via CI/CD, tandis que les organisations peuvent auditer leur portefeuille de projets.
+### Processus d'analyse
 
-Contrairement à Sphinx/Doxygen (génération uniquement), Pydocstyle (format de docstrings), ou Read the Docs (présentation), le Documentation Consistency Assistant comble un vide en vérifiant la cohérence entre code source et documentation externe, un espace largement inexploré.
+1. **Extraction du code**: SimpleRegexParser parcourt le projet et extrait les classes, fonctions, méthodes avec leurs numéros de ligne. Pour Python, le fallback AST Parser offre plus de précision.
 
-Le système supporte projets multi-langages avec une analyse regex performante (~95% des cas standards) et reste déployable partout grâce à ses zéro dépendances binaires. Les parties suivantes détailleront l'architecture technique, le flux d'analyse, et les aspects pratiques de déploiement.
+2. **Extraction de la documentation**: Scanning de tous les fichiers de documentation (README, Markdown, texte brut) pour indexer le contenu.
+
+3. **Comparaison**: Mise en correspondance de chaque élément de code avec la documentation. Les éléments non trouvés sont signalés comme incohérences avec niveau de sévérité (critique, avertissement, mineur).
+
+4. **Suggestion**: Génération de suggestions de documentation. En mode heuristique, propose des templates. En mode LLM (OpenAI), génère des descriptions contextuelles intelligentes.
+
+5. **Visualisation**: Production de rapports visuels complets avec score de santé documentaire, graphiques, diagrammes Mermaid, et données exportables (JSON, Markdown, PNG).
+
+## 1.3 Capacités et interfaces
+
+### Fonctionnalités de base
+
+- **Analyse multi-langage**: Détecte et analyse 9+ langages dans un même projet
+- **Extraction complète**: Classes, fonctions, méthodes, avec docstrings et métadonnées
+- **Comparaison intelligente**: Détecte l'absence de documentation externe ET interne
+- **Score de santé**: Métrique synthétique (0-100) de l'état documentaire du projet
+- **Suggestions contextuelles**: Templates ou recommandations IA personnalisées
+- **Visualisations**: Graphiques, diagrammes, jauges de score
+- **Exports multiples**: JSON, Markdown, PNG haute définition
+
+### Interfaces d'accès
+
+- **Interface Web Streamlit**: Upload ZIP, affichage interactif, export de rapports
+- **Utilisation programmatique**: Import des modules Python pour intégration personnalisée
+- **Intégration CI/CD**: Analyse automatique à chaque commit/PR, publication de rapports
+
+## 1.4 Positionnement dans l'écosystème
+
+Le système se distingue des outils existants:
+- **Sphinx/Doxygen**: Génèrent de la documentation technique, ne vérifient pas la cohérence
+- **Linters (Pydocstyle)**: Vérifient la présence de docstrings, ignorent la documentation externe
+- **Coverage**: Analysent la couverture de tests, pas la documentation
+- **Read the Docs**: Excel dans la présentation, pas la détection d'incohérences
+
+Le **Documentation Consistency Assistant** se positionne comme un **pont** entre le code source et la documentation externe – un espace largement inexploré par les outils existants.
+
+## 1.5 Bénéfices et limitations
+
+### Bénéfices
+
+- **Développeurs individuels**: Gain de temps, suggestions de documentation, métriques objectives
+- **Équipes**: Standards de qualité documentaire, respect des critères dans les PRs, efficacité des revues
+- **Projets open-source**: Documentation de qualité = adoption plus élevée
+- **Organisations**: Audit du portefeuille complet, standards documentaires cohérents
+
+### Limitations actuelles
+
+- L'analyse regex-based couvre ~95% des cas standards (certaines constructions complexes peuvent être manquées)
+- Détecte l'absence de documentation, pas sa qualité une fois présente
+- Mode IA nécessite clé API OpenAI (coûts proportionnels au volume)
+- Pas d'analyse directe de dépôts distants dans cette version
+
+---
+
+**État actuel**: Le système supporte 9+ langages, zéro dépendances binaires, déploiement Streamlit Cloud production-ready. La partie suivante détaille l'architecture technique et les modules.
