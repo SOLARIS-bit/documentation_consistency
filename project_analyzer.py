@@ -70,7 +70,30 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
     logger.info("Analyzing project with regex-based parser (multi-language support)...")
     try:
         code_elements = regex_parser.analyze_directory()
-        
+
+        # Merge in Python AST results to capture methods/classes accurately
+        seen_keys = set()
+        for el in code_elements:
+            key = (el.get("name"), el.get("type"), el.get("file"))
+            seen_keys.add(key)
+
+        py_files = list(project_path_obj.rglob("*.py"))
+        for file_path in py_files:
+            try:
+                ast_elements = py_parser.analyze_file(str(file_path))
+                for el in ast_elements:
+                    key = (el.get("name"), el.get("type"), el.get("file"))
+                    if key in seen_keys:
+                        continue
+                    # Tag language for AST-added items
+                    el["language"] = "python"
+                    code_elements.append(el)
+                    seen_keys.add(key)
+            except Exception as ex:
+                logger.debug(f"AST merge error for {file_path}: {ex}")
+
+        # Recompute statistics after merge
+        languages_found = set()
         for el in code_elements:
             total_elements += 1
             t = el.get("type")
@@ -80,22 +103,22 @@ def analyze_project(project_path: str, project_name: Optional[str] = None) -> Di
                 functions_count += 1
             elif t == "method":
                 methods_count += 1
-            
+
             lang = el.get("language", "unknown")
             if lang != "unknown":
                 languages_found.add(lang)
-        
+
         # Compare with documentation
         comparison = comparator.compare(code_elements, all_docs)
         if comparison:
             issues.extend(comparison)
-        
+
         # Count unique files with code elements
         files_with_code = set(e.get("file") for e in code_elements if e.get("file"))
         checked_samples = len(files_with_code)
-        
+
         if total_elements > 0:
-            logger.info(f"Regex parser found {total_elements} elements in {len(languages_found)} languages")
+            logger.info(f"Parser found {total_elements} elements in {len(languages_found)} languages (regex + AST merge)")
         else:
             # Regex found nothing, try Python parser for .py files
             logger.warning("Regex parser found no elements, trying Python AST parser")
