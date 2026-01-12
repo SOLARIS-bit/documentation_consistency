@@ -25,6 +25,7 @@ class Comparator:
         for element in code_elements:
             full_name = element.get("name", "").lower()
             short_name = full_name.split('.')[-1]
+            docstring = (element.get("doc") or "").strip()
             
             # --- FILTRES DE BRUIT ---
             # On ignore les tests, les méthodes privées et les fichiers de build
@@ -53,6 +54,13 @@ class Comparator:
                 version_val = element.get("value")
                 if version_val is not None and version_val not in all_doc_text:
                     issues.append(f"VERSION_ERROR: Code version '{version_val}' not found in docs")
+                continue
+
+            # --- 1bis. Docstring considérée comme documentation ---
+            # Si une docstring existe, on considère l'élément documenté
+            if docstring:
+                # Ajouter docstring au corpus pour la vérification des paramètres
+                all_doc_text += " " + docstring.lower()
                 continue
 
             # --- 2. Vérification de l'existence ---
